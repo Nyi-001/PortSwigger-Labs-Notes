@@ -1,0 +1,33 @@
+
+
+                                                        FILE UPLOAD
+                                                        ===========
+
+
+  to read file => <?php file_get_contents('file_path'); ?>
+
+  change the content type
+
+
+  Lab: Web shell upload via path traversal
+  ========================================
+
+  1. first i upload a shell.php 
+  2. but it response with plain text
+  3. so i check in burp , Content-Disposition: form-data; name="avatar"; filename="exploit.php"
+  4. so i used path traversal, like Content-Disposition: form-data; name="avatar"; filename="%2e%2e%2fexploit.php"
+  5. then go back to home 
+  6. then in burp 
+  BOOM
+
+
+Lab: Web shell upload via extension blacklist bypass
+====================================================
+
+1. first i upload a php shell file but it blocks php extension
+2. so i change the file name to [.htaccess]
+3. then the content inside it is [AddType application/x-httpd-php .l33t]
+this content can let run the .l33t file extension as .php extension on the server
+4. then i request it and then change the normal php file and then also change my exploit.php file to exploit.l33t 
+5. send it and BOOM
+
