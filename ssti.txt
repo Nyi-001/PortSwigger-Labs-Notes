@@ -1,0 +1,27 @@
+
+
+
+
+                                       SERVER SIDE TEMPLATE INJECTION
+                                       ==============================
+
+ Server-side template injection vulnerabilities arise when user input is concatenated into templates rather than being passed in as data
+
+
+ Detect => Identify => Exploit
+                               => read
+                                       => explore
+                                                  => attack
+
+
+
+
+ Lab: Basic server-side template injection (code context)
+ =======================================================
+
+ 1. First i inject the basic payloads but doesn't work [Invalid Payload]
+
+ 2. So i check with burp and i got this
+ blog-post-author-display=user.first_name
+
+ 3. 

