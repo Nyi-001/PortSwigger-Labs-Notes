@@ -1,0 +1,93 @@
+
+
+                              Access control vulnerabilities and privilege escalation
+                              =======================================================
+
+
+ Lab: URL-based access control can be circumvented
+ -------------------------------------------------
+ 1. first i got to the /admin , but response "Access denied!"
+ 2. so i change the request url to / and add new header => X-Original-URL: /admin
+ 3. then to delete the username Carlos, 
+ 4. change the real path request to /?username=carlos and add the request header like this
+ X-Original-URL: /admin/delete
+ 5. then go to the root page ,
+ 6. BOOM!
+
+
+ Lab: Method-based access control can be circumvented
+ ----------------------------------------------------
+ 1. First, i login with admin user crendential => administor:admin
+ 2. and go to the admin panel , and upgrade the username carlos
+ 3. then i login the non-admin user credential => wiener:peter
+ 4. and update the email and sent to the burp repeater
+ 5. then when i replace the wiener's session cookie in admin session and then upgrade the username carlos
+ 6. response say "unauthorized"
+ 7. then i change the request method to POSTX from POST
+ 8. then response " missing parameter username"
+ 9. so i change the request method to GET method
+ 10. success
+ 11. i change the username to wiener => BOOM!
+
+
+
+
+ Lab: User ID controlled by request parameter, with unpredictable user IDs
+ -------------------------------------------------------------------------
+ 1. i login with wiener:peter
+ 2. then check the parameter , it use GUID , so difficult to guess others
+ 3. so i look around the home dir , and check in the burp response and filter "carlos"
+ 4. then i got /blogs?userId=c1ca2e5e-8f7c-4cd1-9030-eac7cea36eed'>carlos
+ 5. so i change the wiener's GUID to carlos
+ 6. BOOM!
+
+
+
+
+
+ Lab: User ID controlled by request parameter with data leakage in redirect
+ --------------------------------------------------------------------------
+ 1. login with wiener account and check in the burp
+ 2. i change the GET /my-account?id=wiener to GET /my-account?id=carlos
+ 3. then follow redirection, and got to the login page
+ 4. then back to the redirection, and then the account changed to the carlos's account
+ 5. BOOM!
+
+
+
+
+
+ Lab: User ID controlled by request parameter with password disclosure
+ ---------------------------------------------------------------------
+ 1. login with wiener:peter user credential
+ 2. then in the myaccount/id=wiener, i change to administrator and then change the password 
+ 3. then check the password and got the password
+ 4. log in with it and delete the carlos user
+ 5. BOOM!
+
+
+
+
+Lab: Multi-step process with no access control on one step 
+----------------------------------------------------------
+1. login with administrator:admin and go to the admin panel and update to carlos 
+2. send all of the step request to the repeator 
+3. then login with non admin user and use it's cookie in the above three requests and change the username to wiener
+4. in the second request, it works 
+5. BOOM!
+
+
+
+
+
+Referer-based access contro
+---------------------------
+1. First i login with admin account and go to the admin panel and and upgrade carlos user
+2. then send to the burp repeater
+3. then i login with another non-admin account and copy it's cookie
+4. then change the cookie and username with non-admin's to the admin's carlos upgrade request
+5. BOOM!
+
+
+
+
