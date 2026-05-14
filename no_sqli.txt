@@ -11,6 +11,7 @@ admin'||1||'1'=='1'
 '||this.password.match('.*')||'
 '||this.password.match('^.*')||'
 
+
   => if the app use JSON API , it has many chances to be using no_sql 
 
  to test if the site use no sql
