@@ -1,0 +1,249 @@
+
+
+                                          JWT token
+                                          =========
+
+1. change algorithm to none
+2. bruteforce the secret key (hashcat -a 0 -m 16500 <jwt> <wordlist>)
+
+JWT header parameter injection
+------------------------------
+၁။ jwk (JSON Web Key) Injection
+
+ဒီနည်းလမ်းကတော့ တိုက်ခိုက်သူက Key ကို Token ရဲ့ Header ထဲမှာ တိုက်ရိုက် ထည့်ပေးလိုက်တာပါ။
+
+    ဘယ်လိုလုပ်သလဲ: Hacker က ကိုယ်ပိုင် Key တစ်ခု (Private/Public Key pair) ကို ထုတ်လိုက်ပါတယ်။ ပြီးရင် JWT ထဲက အချက်အလက်တွေကို ပြင်တယ် (ဥပမာ- user နေရာမှာ admin လို့ ပြောင်းတယ်)။ ပြီးရင် အဲဒီ Header ထဲမှာ သူ့ရဲ့ Public Key (jwk) ကို ထည့်ပေးလိုက်ပါတယ်။
+
+    ဘာဖြစ်သွားလဲ: Server က Token ကို စစ်တဲ့အခါ သူ့ဆီမှာရှိတဲ့ Key နဲ့ မစစ်ဘဲ Header ထဲမှာ ပါလာတဲ့ Hacker ရဲ့ Key နဲ့ စစ်လိုက်ပါတယ်။ Signature က ကိုက်နေတဲ့အတွက် Server က ဒီ Token ကို အစစ်လို့ ထင်ပြီး Admin အခွင့်အရေး ပေးလိုက်ပါတယ်။
+
+၂။ jku (JSON Web Key Set URL) Injection
+
+ဒါကတော့ Key ကို တိုက်ရိုက်မထည့်ဘဲ Key ရှိတဲ့ Link (URL) ကို ပေးလိုက်တဲ့ နည်းလမ်းပါ။
+
+    ဘယ်လိုလုပ်သလဲ: Hacker က သူ့ရဲ့ Key ကို ကိုယ်ပိုင် Server တစ်ခုခု ဒါမှမဟုတ် Exploit Server တစ်ခုပေါ်မှာ တင်ထားလိုက်ပါတယ်။ ပြီးရင် JWT Header ထဲက jku နေရာမှာ အဲဒီ URL ကို ထည့်လိုက်ပါတယ်။
+
+    ဘာဖြစ်သွားလဲ: Server က Token ကို စစ်ဖို့အတွက် Hacker ပေးထားတဲ့ URL ဆီကို သွားပြီး Key ကို Download ဆွဲပါတယ်။ ပြီးရင် အဲဒီ Key နဲ့ပဲ Signature ကို စစ်လိုက်တဲ့အတွက် Hacker စိတ်ကြိုက်ပြင်ထားတဲ့ Token က အောင်မြင်သွားပါတယ်။
+
+၃။ kid (Key ID) Injection
+
+kid ဆိုတာကတော့ Server မှာ Key တွေ အများကြီးရှိတဲ့အခါ ဘယ် Key ကို သုံးရမလဲဆိုတာ ခွဲခြားတဲ့ ID ဖြစ်ပါတယ်။
+
+    ဘယ်လိုလုပ်သလဲ (Directory Traversal): Hacker က kid နေရာမှာ ဖိုင်လမ်းကြောင်းတွေ ထည့်လိုက်တာပါ။ ဥပမာ- "kid": "../../../dev/null"။
+
+    ဘာဖြစ်သွားလဲ: အကယ်လို့ Server က /dev/null ဖိုင်ကို Key အဖြစ် သုံးမိသွားရင် အဲဒီဖိုင်က အထဲမှာ ဘာမှမရှိတဲ့အတွက် (Empty String) ဖြစ်နေတတ်ပါတယ်။ Hacker ကလည်း ဘာမှမရှိတဲ့ Empty String နဲ့ပဲ Token ကို Sign လုပ်ထားရင် Signature အောင်မြင်သွားပြီး Server ထဲကို ခိုးဝင်လို့ ရသွားပါတယ်။
+
+
+
+
+Injecting self-signed JWTs via the jwk parameter
+------------------------------------------------
+၁။ Key အသစ်တစ်ခု ပြုလုပ်ခြင်း (Generate a New Key)
+
+အရင်ဆုံး Burp Suite ထဲမှာ ကိုယ်ပိုင် RSA Key တစ်ခု ရှိဖို့လိုပါတယ်။
+
+    Burp Suite ထဲက JWT Editor Keys tab ကိုသွားပါ။
+
+    New RSA Key ကို နှိပ်ပါ။
+
+    ပေါ်လာတဲ့ window မှာ ဘာမှပြင်စရာမလိုဘဲ Generate ကို နှိပ်ပြီး OK ပေးလိုက်ပါ။ (ဒါဆိုရင် Hacker ရဲ့ ကိုယ်ပိုင် Private/Public Key pair တစ်ခု ရသွားပါပြီ)
+
+၂။ JWT ကို ပြင်ဆင်ခြင်း
+
+    Proxy ဒါမှမဟုတ် HTTP History ထဲကနေ JWT ပါတဲ့ Request တစ်ခုကို Repeater ထံ ပို့လိုက်ပါ။
+
+    Repeater ထဲမှာ JSON Web Token ဆိုတဲ့ Tab အသစ်ကို နှိပ်ပါ။
+
+    Payload အပိုင်းမှာ ကိုယ်ပြောင်းချင်တဲ့ Data ကို ပြောင်းပါ (ဥပမာ- "sub": "wiener" ကို "sub": "admin" လို့ ပြောင်းတာမျိုး)။
+
+၃။ Embedded JWK Attack ပြုလုပ်ခြင်း
+
+ဒါက အရေးကြီးဆုံး အဆင့်ပါ။
+
+    Message Editor ထဲက Attack button ကို နှိပ်ပါ။
+
+    ထဲကမှ Embedded JWK ဆိုတာကို ရွေးပါ။
+
+    Select Key ဆိုပြီး ပေါ်လာရင် ခုနက ကိုယ် Generate လုပ်ထားတဲ့ RSA Key ကို ရွေးပေးလိုက်ပါ။
+
+၄။ ဘာတွေ ပြောင်းလဲသွားသလဲ?
+
+ဒီ Attack ကို နှိပ်လိုက်တဲ့အခါ JWT Editor က အောက်ပါအတိုင်း အလိုအလျောက် လုပ်ပေးသွားပါတယ်-
+
+    Header: ထဲမှာ jwk ဆိုတဲ့ parameter တစ်ခု ထပ်တိုးလာပြီး အဲဒီထဲမှာ သင်ခုနက လုပ်ထားတဲ့ Public Key ရောက်နေပါလိမ့်မယ်။
+
+    Signature: Token တစ်ခုလုံးကို သင်ခုနက လုပ်ထားတဲ့ Private Key နဲ့ Sign လုပ်လိုက်ပါတယ်။
+
+၅။ Request ပို့ပြီး စမ်းသပ်ခြင်း
+
+    Send ကို နှိပ်လိုက်ပါ။
+
+    အကယ်လို့ Server က Misconfigured ဖြစ်နေရင် (ဆိုလိုတာက Header ထဲက Key ကိုပဲ ယူသုံးတယ်ဆိုရင်) သင့်ကို Admin အဖြစ် လက်ခံသွားပါလိမ့်မယ်။
+
+
+
+
+
+Lab: JWT authentication bypass via jwk header injection
+-------------------------------------------------------
+1. First, i loginned with provided username and password
+2. and request /admin , then i got jwt token in the reqeust, when i decode it
+
+{
+"kid": "387e6f45-bad0-48eb-a428-21cdb65572f0",
+"alg": "RS256"
+}
+{
+"iss": "portswigger",
+"exp": 123234235,
+"sub": "wiener"
+}
+
+3. then i got to the JWT editor in burp main
+4. then click new RSA key, and Generate and then okay
+5. then /admin request in burprepeater , go to the JSON Web Token, change the 'sub' to administratortor
+then attack and embedd jwk and then okay
+6. send the request 
+BOOM!
+To send another another request, we need to generate new key and attack again , like the method used above!
+
+
+
+
+Injecting self-signed JWTs via the jku parameter
+------------------------------------------------
+jku (JWK Set URL) injection ဆိုတာက jwk injection နဲ့ ဆင်တူပေမယ့် Key ကို Token ထဲမှာ တိုက်ရိုက်မထည့်ဘဲ URL link တစ်ခုအနေနဲ့ ပေးလိုက်တာဖြစ်ပါတယ်။Server က Signature စစ်ဖို့အတွက် အဲဒီ URL ဆီကို သွားပြီး Key ကို လှမ်းယူ (Fetch) တဲ့အချက်ကို အသုံးချပြီး တိုက်ခိုက်တာဖြစ်ပါတယ်။ 
+
+၁။ Hacker ရဲ့ Key Set ကို ပြင်ဆင်ခြင်း
+
+အရင်ဆုံး Hacker က ကိုယ်ပိုင် RSA Key တစ်ခုကို Burp Suite ထဲမှာ Generate လုပ်ရပါမယ်။ ပြီးရင် အဲဒီ Key ရဲ့ Public Key ကို JSON format (JWK Set) အနေနဲ့ သိမ်းဆည်းရပါမယ်။
+
+    Burp ထဲက JWT Editor Keys tab ကိုသွားပါ။
+
+    ကိုယ်တိုင်ပြုလုပ်ထားတဲ့ Key ပေါ်မှာ Right-click နှိပ်ပြီး Copy JWK as Set ကို နှိပ်ပါ။
+
+၂။ မသမာသော Key ကို Host လုပ်ခြင်း (Hosting the Malicious Key)
+
+Server က လှမ်းယူနိုင်မယ့် နေရာတစ်ခုမှာ ခုနက Copy ကူးထားတဲ့ JSON ကို တင်ထားရပါမယ်။
+
+    ဥပမာ- https://attacker-website.com/keys.json ဆိုတဲ့ Link မှာ ခုနက Public Key ကို သွားတင်ထားလိုက်တာမျိုးပါ။
+
+၃။ JWT Header ကို ပြုပြင်ခြင်း
+
+ယခုအခါမှာတော့ Victim Server ဆီ ပို့မယ့် JWT ကို ပြင်ဆင်ပါမယ်။
+
+    Header ထဲမှာ jku ဆိုတဲ့ parameter ကို ထည့်ပြီး ခုနက Hacker တင်ထားတဲ့ URL ကို ပေးလိုက်ပါ။
+
+    kid (Key ID) ကလည်း Hacker ရဲ့ keys.json ထဲမှာ ပါတဲ့ ID နဲ့ တူနေရပါမယ်။
+
+JSON
+
+{
+    "alg": "RS256",
+    "typ": "JWT",
+    "jku": "https://attacker-website.com/keys.json",
+    "kid": "hacker-key-id"
+}
+
+၄။ Signature ကို Sign လုပ်ခြင်း
+
+Token ရဲ့ Payload ကို (ဥပမာ- admin အဖြစ်) ပြင်ဆင်ပြီးတာနဲ့ Hacker ရဲ့ Private Key ကို သုံးပြီး Signature ကို Sign လုပ်လိုက်ပါ။
+၅။ Server ရဲ့ တုံ့ပြန်မှု
+
+Server ဆီကို ဒီ Token ပို့လိုက်တဲ့အခါ:
+
+    Server က jku ထဲက URL ကို မြင်မယ်။
+
+    အဲဒီ URL (Hacker ရဲ့ server) ဆီကို သွားပြီး Key ကို ဒေါင်းလုဒ်ဆွဲမယ်။
+
+    ရလာတဲ့ Key နဲ့ Signature ကို စစ်မယ်။
+
+    Hacker ရဲ့ Key နဲ့ Sign လုပ်ထားတာဖြစ်လို့ Signature ကို "အမှန်" လို့ သတ်မှတ်ပြီး Hacker ကို ပေးဝင်လိုက်မယ်။
+
+
+
+
+LAB:JWT authentication bypass via jku header injection
+------------------------------------------------------
+1.Firstly i loggined with provided crendentials, and then go to the /admin
+2. In burp, i got jwt token, so i tried simple jwt bypass method but doesn't work 
+3. i need to try jku header injection.
+4. In jwt editor in burp, i created a RSA key, and copy public key as JWK
+5. then i go to the exploit server, then add the 
+
+{
+    keys:[paste_copied public key as JWK]
+}
+
+6. then in the burp repeater's JSON WEB TOKEN, i change the JWS header of kid value to generated kid value.
+7. then add a header => "jku": "exploit_server_url"
+8. then change the sub value of Paylod from wiener to administrator
+9. Click Sign => make sure select Don't modify header => click Okay
+10. then send the request => BOOM!
+
+
+
+
+Injecting self-signed JWTs via the kid parameter
+------------------------------------------------
+kid (Key ID) parameter injection ကတော့ တကယ့်ကို ပါးနပ်တဲ့ တိုက်ခိုက်မှုတစ်ခုပါ။ သူက JWT အားနည်းချက်တင်မကဘဲ Directory Traversal အားနည်းချက်ကိုပါ ပေါင်းစပ်အသုံးချသွားတာ ဖြစ်ပါတယ်။
+
+kid (Key ID) parameter injection ကတော့ တကယ့်ကို ပါးနပ်တဲ့ တိုက်ခိုက်မှုတစ်ခုပါ။ သူက JWT အားနည်းချက်တင်မကဘဲ Directory Traversal အားနည်းချက်ကိုပါ ပေါင်းစပ်အသုံးချသွားတာ ဖြစ်ပါတယ်။
+
+အဆင့်ဆင့်ကို မြန်မာလို သေချာရှင်းပြပေးပါမယ်။
+၁။ kid ဆိုတာ ဘာလဲ?
+
+Server မှာ Key တွေအများကြီးရှိတဲ့အခါ (ဥပမာ- တစ်လတစ်ခါ Key အသစ်လဲတာမျိုး) ဘယ် Key နဲ့ စစ်ရမလဲဆိုတာ သိအောင် kid (Key ID) ကို သုံးပါတယ်။ Developer အတော်များများက ဒီ kid နေရာမှာ File Name ဒါမှမဟုတ် Database ID တွေကို သုံးလေ့ရှိကြပါတယ်။
+၂။ Attack ရဲ့ အဓိက အိုင်ဒီယာ (The Core Idea)
+
+အကယ်လို့ Server က kid ထဲမှာ ပါတဲ့စာသားကို ယူပြီး File System ထဲမှာ သွားရှာတယ်ဆိုရင်၊ တိုက်ခိုက်သူက Directory Traversal (../../) ကို သုံးပြီး Server ထဲမှာရှိတဲ့ တခြားဖိုင်တွေကို "Key" အဖြစ် အတင်းအဓမ္မ သုံးခိုင်းလို့ ရပါတယ်။
+၃။ /dev/null ကို အသုံးချခြင်း (The Payload)
+
+ဒီ Attack မှာ အသုံးအများဆုံးနဲ့ အန္တရာယ်အရှိဆုံးက Linux Server တွေမှာရှိတဲ့ /dev/null ဖိုင် ဖြစ်ပါတယ်။
+
+    ဘာကြောင့်လဲ: /dev/null က အထဲမှာ ဘာစာသားမှမရှိတဲ့ Empty file ဖြစ်ပါတယ်။
+
+    ရလဒ်: Server က ဒီဖိုင်ကို Key အဖြစ် ဖတ်လိုက်ရင် သူရမယ့် Key က "Empty String" (ဘာမှမရှိတဲ့စာသား) ဖြစ်နေပါလိမ့်မယ်။
+
+၄။ ဘယ်လို Attack လုပ်သလဲ? (Step-by-Step)
+
+    JWT Header ကို ပြင်ဆင်ခြင်း: kid တန်ဖိုးကို /dev/null ဆီ ရောက်သွားအောင် ပြင်လိုက်ပါတယ်။
+    JSON
+
+{
+  "alg": "HS256",
+  "typ": "JWT",
+  "kid": "../../../../../../../dev/null"
+}
+
+(မှတ်ချက်: alg ကို Symmetric algorithm ဖြစ်တဲ့ HS256 ပြောင်းဖို့ လိုအပ်နိုင်ပါတယ်။)
+
+Symmetric Key (Secret) ကို သတ်မှတ်ခြင်း: Burp Suite ရဲ့ JWT Editor Keys ထဲမှာ Key အသစ်တစ်ခု ဆောက်ပါ။ ဒီတစ်ခါတော့ Symmetric Key (Octet Sequence) ကို ရွေးပါ။
+
+    Key တန်ဖိုး (Base64) နေရာမှာ ဘာမှမထည့်ဘဲ (Empty) ထားလိုက်ပါ။ ဒါဆိုရင် သင်က Empty string နဲ့ Sign လုပ်ဖို့ ပြင်ဆင်ပြီးသား ဖြစ်သွားပါပြီ။
+
+Token ကို Sign လုပ်ခြင်း: Payload ကို (ဥပမာ- admin) ပြင်ပြီးတာနဲ့ ခုနက ဆောက်ထားတဲ့ "ဘာမှမရှိတဲ့ Key" နဲ့ Sign လုပ်လိုက်ပါ။
+
+Server ဆီ ပို့ခြင်း: Server က Token ကို လက်ခံရရှိတဲ့အခါ-
+
+    kid ကို ကြည့်ပြီး /dev/null ဖိုင်ကို သွားဖတ်ပါတယ်။
+
+    ဖိုင်က အလွတ်ဖြစ်နေတော့ Server ကလည်း Empty string ကို Key အဖြစ် သုံးပြီး Signature စစ်ပါတယ်။
+
+    သင်ကလည်း Empty string နဲ့ပဲ Sign လုပ်ထားတာဖြစ်လို့ Signature က ကိုက်ညီသွားပြီး Admin အဖြစ် ပေးဝင်လိုက်ပါတယ်။
+
+
+
+Lab: JWT authentication bypass via kid header path traversal
+------------------------------------------------------------
+The goal is to get the admin panel and to delete the carlos user account
+
+1. first i logined with provided username and password
+2. then reqeusted the /admin , but only administrator can access
+3. when i check with burp, i got jwt token
+4. so i tested the simple bypass method.But doesn't work
+5. so i decided to use kid header path traversal
+6. in JWT editor, create a symmetric key => then replace the value of k with url encoded value of null byte(AA==) => okay
+7. in burprepeater => JSON Web Token, change the value to administrator and in the header, change the kid value to 
+../../../../../../../dev/null
+8. then in the buttom, click sign => okay
+9. then send the request => BOOM!
